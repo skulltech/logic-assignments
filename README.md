@@ -1,2 +1,2 @@
-# propositional-logic
-Exercises in Ocaml related to syntax and semantics of propositional logic 
+# logic-assignments
+Assignments for the course COL703 — Logic for Computer Science @ IIT Delhi.
