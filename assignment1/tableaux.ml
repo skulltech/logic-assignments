@@ -39,14 +39,12 @@ let rec contrad_path t rho =  match t with
 	| t' -> t'
 ;;
 
-
-
 let rec find_assignments n rho exp = match n with
 	(* Beta nodes *)
 	| Node (And (p1, p2), false) -> (find_assignments (Node (p1, false)) rho exp) @ (find_assignments (Node (p2, false)) rho exp)
 	| Node (Or (p1, p2), true) -> (find_assignments (Node (p1, true)) rho exp) @ (find_assignments (Node (p2, true)) rho exp)
 	| Node (Impl (p1, p2), true) -> (find_assignments (Node (p1, false)) rho exp) @ (find_assignments (Node (p2, true)) rho exp)
-	| Node (Iff (p1, p2), false) -> find_assignments (Node (Impl(p1, p2), false)) rho ((Node (Impl(p2, p1), false))::exp)
+	| Node (Iff (p1, p2), false) -> find_assignments (Node (Impl(p1, p2), false)) rho exp @ (find_assignments (Node (Impl(p2, p1), false)) rho exp)
 	(* Alpha nodes *)
 	| Node (And (p1, p2), true) -> find_assignments (Node (p1, true)) rho ((Node (p2, true))::exp)
 	| Node (Or (p1, p2), false) -> find_assignments (Node (p1, false)) rho ((Node (p2, false))::exp)
@@ -54,19 +52,50 @@ let rec find_assignments n rho exp = match n with
 	| Node (Iff (p1, p2), true) -> find_assignments (Node (Impl(p1, p2), true)) rho ((Node (Impl(p2, p1), true))::exp)
 	(* Not operator *)
 	| Node (Not p, b) -> find_assignments (Node (p, not b)) rho exp
-	(* Leaf cases *)
+	(* Leaf cases, with expansion as necessary *)
 	| Node (T, b) -> if (not b) then [] else (match exp with
 		| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
-		| [] -> rho)
+		| [] -> [rho])
 	| Node (F, b) -> if b then [] else (match exp with
 		| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
-		| [] -> rho)
+		| [] -> [rho])
 	| Node (L s, b) -> let x = (lookup rho s) in (
 		if x = Some b then (match exp with
 			| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
-			| [] -> rho)
+			| [] -> [rho])
 		else if x = None then (match exp with
 			| (Node (p, b))::exp' -> find_assignments (Node (p, b)) ((s, b)::rho) exp'
-			| [] -> ((s, b)::rho))
+			| [] -> [((s, b)::rho)])
 		else [])
 ;;
+
+let rec step_develop n rho exp = match n with
+	(* Beta nodes *)
+	| Node (And (p1, p2), false) -> Tree (Node (And (p1, p2), false), true, false, [(step_develop (Node (p1, false)) rho exp); (step_develop (Node (p2, false)) rho exp)])
+	| Node (Or (p1, p2), true) -> Tree (Node (Or (p1, p2), true), true, false, [(step_develop (Node (p1, true)) rho exp); (step_develop (Node (p2, true)) rho exp)])
+	| Node (Impl (p1, p2), true) -> Tree (Node (Impl (p1, p2), true), true, false, [(step_develop (Node (p1, false)) rho exp); (step_develop (Node (p2, true)) rho exp)])
+	| Node (Iff (p1, p2), false) -> Tree (Node (Iff (p1, p2), false), true, false, [(step_develop (Node ((Impl (p1, p2)), false)) rho exp); (step_develop (Node ((Impl (p2, p1)), false)) rho exp)])
+	(* Alpha nodes *)
+	| Node (And (p1, p2), true) -> Tree(Node (And (p1, p2), true), true, false, [(step_develop (Node (p1, true)) rho ((Node (p2, true))::exp))])
+	| Node (Or (p1, p2), false) -> Tree(Node (Or (p1, p2), false), true, false, [(step_develop (Node (p1, false)) rho ((Node (p2, false))::exp))])
+	| Node (Impl (p1, p2), false) -> Tree(Node (Impl (p1, p2), false), true, false, [(step_develop (Node (p1, true)) rho ((Node (p2, false))::exp))])
+	| Node (Iff (p1, p2), true) -> Tree(Node (Iff (p1, p2), true), true, false, [(step_develop (Node (Impl(p1, p2), true)) rho ((Node (Impl(p2, p1), true))::exp))])
+	(* Not operator *) 
+	| Node (Not p, b) -> Tree(Node (Not p, b), true, false, [(step_develop (Node (p, not b)) rho exp)])
+	(* Leaf cases, with expansion as necessary *)
+	| Node (T, b) -> if (not b) then Tree(Node (T, b), true, true, []) else (match exp with
+		| (Node (p, b))::exp' -> Tree(Node (T, b), true, false, [(step_develop (Node (p, b)) rho exp')])
+		| [] -> Tree(Node (T, b), true, false, []))
+	| Node (F, b) -> if b then Tree(Node (F, b), true, true, []) else (match exp with
+		| (Node (p, b))::exp' -> Tree(Node (F, b), true, false, [step_develop (Node (p, b)) rho exp'])
+		| [] -> Tree(Node (F, b), true, false, []))
+	| Node (L s, b) -> let x = (lookup rho s) in (
+		if x = Some b then (match exp with
+			| (Node (p, b))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b)) rho exp'])
+			| [] -> Tree(Node (L s, b), true, false, []))
+		else if x = None then (match exp with
+			| (Node (p, b))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b)) ((s, b)::rho) exp'])
+			| [] -> Tree(Node (L s, b), true, false, []))
+		else Tree(Node (L s, b), true, true, []))
+;;
+
