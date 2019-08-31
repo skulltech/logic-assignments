@@ -54,17 +54,17 @@ let rec find_assignments n rho exp = match n with
 	| Node (Not p, b) -> find_assignments (Node (p, not b)) rho exp
 	(* Leaf cases, with expansion as necessary *)
 	| Node (T, b) -> if (not b) then [] else (match exp with
-		| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
+		| (Node (p, b'))::exp' -> find_assignments (Node (p, b')) rho exp'
 		| [] -> [rho])
 	| Node (F, b) -> if b then [] else (match exp with
-		| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
+		| (Node (p, b'))::exp' -> find_assignments (Node (p, b')) rho exp'
 		| [] -> [rho])
 	| Node (L s, b) -> let x = (lookup rho s) in (
 		if x = Some b then (match exp with
-			| (Node (p, b))::exp' -> find_assignments (Node (p, b)) rho exp'
+			| (Node (p, b'))::exp' -> find_assignments (Node (p, b')) rho exp'
 			| [] -> [rho])
 		else if x = None then (match exp with
-			| (Node (p, b))::exp' -> find_assignments (Node (p, b)) ((s, b)::rho) exp'
+			| (Node (p, b'))::exp' -> find_assignments (Node (p, b')) ((s, b)::rho) exp'
 			| [] -> [((s, b)::rho)])
 		else [])
 ;;
@@ -84,18 +84,19 @@ let rec step_develop n rho exp = match n with
 	| Node (Not p, b) -> Tree(Node (Not p, b), true, false, [(step_develop (Node (p, not b)) rho exp)])
 	(* Leaf cases, with expansion as necessary *)
 	| Node (T, b) -> if (not b) then Tree(Node (T, b), true, true, []) else (match exp with
-		| (Node (p, b))::exp' -> Tree(Node (T, b), true, false, [(step_develop (Node (p, b)) rho exp')])
+		| (Node (p, b'))::exp' -> Tree(Node (T, b), true, false, [(step_develop (Node (p, b')) rho exp')])
 		| [] -> Tree(Node (T, b), true, false, []))
 	| Node (F, b) -> if b then Tree(Node (F, b), true, true, []) else (match exp with
-		| (Node (p, b))::exp' -> Tree(Node (F, b), true, false, [step_develop (Node (p, b)) rho exp'])
+		| (Node (p, b'))::exp' -> Tree(Node (F, b), true, false, [step_develop (Node (p, b')) rho exp'])
 		| [] -> Tree(Node (F, b), true, false, []))
 	| Node (L s, b) -> let x = (lookup rho s) in (
 		if x = Some b then (match exp with
-			| (Node (p, b))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b)) rho exp'])
+			| (Node (p, b'))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b')) rho exp'])
 			| [] -> Tree(Node (L s, b), true, false, []))
 		else if x = None then (match exp with
-			| (Node (p, b))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b)) ((s, b)::rho) exp'])
+			| (Node (p, b'))::exp' -> Tree(Node (L s, b), true, false, [step_develop (Node (p, b')) ((s, b)::rho) exp'])
 			| [] -> Tree(Node (L s, b), true, false, []))
 		else Tree(Node (L s, b), true, true, []))
 ;;
 
+let p1 = Impl(Impl(Impl(L "x1", L "x2"), L "x1"), L "x1");;
