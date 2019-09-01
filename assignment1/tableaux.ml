@@ -36,7 +36,10 @@ let rec contrad_path t rho =  match t with
 		if x = Some b then Tree (Node (L l, b), e, false, [(contrad_path d1 rho); (contrad_path d2 rho)])
 		else if x = None then Tree (Node (L l, b), e, false, [(contrad_path d1 ((l, b)::rho)); (contrad_path d2 ((l, b)::rho))])
 		else Tree (Node (L l, b), e, true, [d1; d2]))
-	| t' -> t'
+	| Tree (Node (p, b), e, c, l) -> (match l with
+		| [] -> Tree (Node (p, b), e, c, l)
+		| [d] -> Tree (Node (p, b), e, c, [contrad_path d rho])
+		| [d1; d2] -> Tree (Node (p, b), e, c, [contrad_path d1 rho; contrad_path d2 rho]))
 ;;
 
 let rec find_assignments n rho exp = match n with
@@ -99,4 +102,52 @@ let rec step_develop n rho exp = match n with
 		else Tree(Node (L s, b), true, true, []))
 ;;
 
+let rec check_tautology p = match (find_assignments (Node(p, false)) [] []) with
+	| [] -> true, []
+	| e::l -> false, e
+;;
+
+let rec check_contradiction p = match (find_assignments (Node(p, true)) [] []) with
+	| [] -> true, []
+	| e::l -> false, e
+;;
+
+let rec select_node t =  match t with
+	| Tree (Node (p, b), e, c, l) -> (match e with
+		| false -> [Node (p, b)]
+		| true -> (match l with
+			| [] -> []
+			| [e] -> select_node e
+			| [e1; e2] -> (match ((select_node e1) @ (select_node e2)) with
+				| e::l' -> [e]
+				| [] -> [])))
+;;
+
 let p1 = Impl(Impl(Impl(L "x1", L "x2"), L "x1"), L "x1");;
+let p2 = Impl(And(Impl(L "p", L "q"), Impl(L "q", L "r")), Impl(L "p", L "r"));;
+let p3 = Not(Or(L "p", Not(And(L "p", L "q"))));;
+
+let t1 = Tree (Node (Impl (Impl (Impl (L "x1", L "x2"), L "x1"), L "x1"), false), true, false,
+ [Tree (Node (Impl (Impl (L "x1", L "x2"), L "x1"), true), true, false,
+   [Tree (Node (Impl (L "x1", L "x2"), false), true, false,
+     [Tree (Node (L "x1", true), true, false,
+       [Tree (Node (L "x2", false), true, false,
+         [Tree (Node (L "x1", false), true, false, [])])])]);
+    Tree (Node (L "x1", true), true, false,
+     [Tree (Node (L "x1", false), true, false, [])])])])
+;;
+
+let rec contains l e = match l with
+	| [] -> false
+	| e::l' -> true
+;;
+
+let t2 = Tree (Node (Impl (Impl (Impl (L "x1", L "x2"), L "x1"), L "x1"), false), true, false,
+ [Tree (Node (Impl (Impl (L "x1", L "x2"), L "x1"), true), true, false,
+   [Tree (Node (Impl (L "x1", L "x2"), false), true, false,
+     [Tree (Node (L "x1", true), true, false,
+       [Tree (Node (L "x2", false), false, false,
+         [])])]);
+    Tree (Node (L "x1", true), true, false,
+     [Tree (Node (L "x1", false), true, false, [])])])])
+;;
