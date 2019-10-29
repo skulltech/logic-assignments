@@ -92,3 +92,53 @@ let rec dedthm t = match t with
 				dedthm (Tree(Node(g'', r), l'))
 			])))
 ;;
+
+
+
+(* Examples *)
+
+let proof1 = Tree(Node([], Impl(L "p", L "p")), [
+	Tree(Node([], Impl(Impl(L "p", Impl(L "q", L "p")), Impl(L "p", L "p"))), [
+		Tree(Node([], Impl(Impl(L "p", Impl(Impl(L "q", L "p"), L "p")), Impl(Impl(L "p", Impl(L "q", L "p")), Impl(L "p", L "p")))), []);
+		Tree(Node([], Impl(L "p", Impl(Impl(L "q", L "p"), L "p"))), [])]);
+	Tree(Node([], Impl(L "p", Impl(L "q", L "p"))), [])
+]);;
+
+let proof2 = Tree(Node([L "s"], Impl(L "p", L "p")), [
+	Tree(Node([L "s"], Impl(Impl(L "p", Impl(L "q", L "p")), Impl(L "p", L "p"))), [
+		Tree(Node([L "s"], Impl(Impl(L "p", Impl(Impl(L "q", L "p"), L "p")), Impl(Impl(L "p", Impl(L "q", L "p")), Impl(L "p", L "p")))), []);
+		Tree(Node([L "s"], Impl(L "p", Impl(Impl(L "q", L "p"), L "p"))), [])]);
+	Tree(Node([L "s"], Impl(L "p", Impl(L "q", L "p"))), [])
+]);;
+
+valid_hprooftree proof1;;
+let padded_p1 = pad proof1 [L "s"];;
+prune padded_p1;;
+dedthm proof2;;
+
+(* More Examples *)
+
+let p1 = L "p";;
+let q1 = Impl(p1, p1);;
+let r1 = p1;;
+let k1 = Tree(Node([], Impl(p1, Impl(q1, p1))), []);;
+let s1 = Tree(Node([], Impl(Impl(p1, Impl(q1, r1)), Impl(Impl(p1, q1), Impl(p1, r1)))), []);;
+let rem1 = Impl(Impl(p1, q1), Impl(p1, r1))
+
+let h1 = Tree(Node([], rem1), [s1; k1]);;
+let k2 = Tree(Node([], Impl(p1, Impl(p1, p1))), []);;
+let h2 = Tree(Node([], Impl(p1, p1)), [h1; k2]);;
+
+valid_hprooftree h1;;
+valid_hprooftree h2;;
+
+let s1 = [L "q"];;
+let new_h2 = pad h2 s1;;
+
+prune new_h2;;
+
+let gamma = [rem1];;
+let h3 = Tree(Node(gamma, Impl(p1, p1)), [Tree(Node(gamma, rem1), []); Tree(Node(gamma, Impl(p1, Impl(p1, p1))), [])]);;
+
+let proofl = [h1];;
+graft h3 proofl;;
