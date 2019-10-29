@@ -186,6 +186,11 @@ subprop_at p1 p5;;
 subprop_at p1 p6;;
 subprop_at p5 p1;;
 
-nnf p6;;
-cnf p4;;
-dnf p1;;
+let n1 = nnf p6;;
+truth n1 table1 = truth p6 table1;;
+
+let n2 = cnf p4;;
+truth n2 table1 = truth p4 table1;;
+
+let n3 = dnf p1;;
+truth n3 table1 = truth p1 table1;;

@@ -162,7 +162,7 @@ let tree2 = Tree (Node (Impl (Impl (Impl (L "x1", L "x2"), L "x1"), L "x1"), fal
 
 contrad_path tree1;;
 contrad_path tree2;;
-step_develop Node(p1, true);
+step_develop (Node(p1, true));;
 select_node tree2;;
 find_assignments p1 true;;
 
